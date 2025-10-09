@@ -1,6 +1,5 @@
-certstream>=1.12
+certstream
 pymongo>=4.0
 flask>=3.0.0
 Werkzeug>=3.0.0
 requests
-re
