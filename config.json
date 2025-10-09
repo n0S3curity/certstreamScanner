@@ -1,0 +1,23 @@
+{
+  "certstream_url": "wss://certstream.calidog.io/",
+  "mongodb_uri": "mongodb://localhost:27017/",
+  "api_host": "0.0.0.0",
+  "api_port": 5000,
+  "database_name": "cert_monitor",
+  "collection_name": "domains",
+  "israeli_tld_suffixes": [
+    ".co.il",
+    ".org.il",
+    ".ac.il",
+    ".net.il",
+    ".muni.il",
+    ".k12.il"
+  ],
+  "exclude_suffixes": [
+    ".gov",
+    ".gov.il"
+  ],
+  "blacklisted_domains": [
+    "konimbo.co.il"
+  ]
+}

@@ -1,0 +1,4 @@
+certstream>=1.12
+pymongo>=4.0
+flask>=3.0.0
+Werkzeug>=3.0.0
