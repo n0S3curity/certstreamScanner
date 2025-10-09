@@ -1,3 +1,4 @@
+import re
 import threading
 
 import certstream
@@ -5,6 +6,9 @@ import logging
 import datetime
 import sys
 import json
+
+import requests
+
 from db_manager import DBManager
 from flask_api import DomainAPI
 
@@ -87,8 +91,9 @@ class CertMonitor:
             return False
 
         # 3. Check blacklist
-        is_blacklisted = domain_lower in self.blacklisted_domains
-        
+        # print(f"checking domain: {domain_lower} is in: {self.blacklisted_domains}")
+        is_blacklisted = any(domain_lower.endswith(bl_item) for bl_item in self.blacklisted_domains)
+
         if is_blacklisted:
             return False
 
@@ -168,6 +173,15 @@ class CertMonitor:
             # Check if it meets our criteria
             if not self._is_target_domain(clean):
                 continue
+
+            if not self._is_not_wordperss(clean):
+                continue
+
+            if not self._is_domain_for_sell(clean):
+                continue
+
+            if not self._is_russian_domain(clean):
+                continue
             
             # Extract base domain
             base = self._extract_base_domain(clean)
@@ -212,6 +226,79 @@ class CertMonitor:
             print(f"An unexpected error occurred in CertStream listener: {e}")
             self.db_manager.close()
             sys.exit(1)
+
+    def _is_not_wordperss(self, domain):
+        """
+        Check if the domain does NOT appear to be a WordPress site.
+        Sends a quick GET request to the homepage and looks for common WordPress markers.
+        Returns:
+            bool: True if NOT WordPress, False if WordPress.
+        """
+        try:
+            url = f"http://{domain}"
+            resp = requests.get(url, timeout=5, headers={"User-Agent": "Mozilla/5.0"})
+            html = resp.text.lower()
+
+            # Common WordPress identifiers
+            wordpress_signatures = [
+                "wp-content", "wp-includes", "wp-json", "wp-admin",
+                "wordpress", "xmlrpc.php"
+            ]
+
+            if any(sig in html for sig in wordpress_signatures):
+                return False  # It's a WordPress site
+
+            return True
+        except requests.RequestException:
+            # If request fails (DNS, timeout, etc.), assume not WordPress (don't block)
+            return True
+
+    def _is_domain_for_sell(self, domain):
+        """
+        Check if a domain shows a 'for sale' or parked page.
+        Looks for common marketplace phrases like 'buy this domain' or 'for sale'.
+        Returns:
+            bool: True if NOT for sale, False if appears to be for sale.
+        """
+        try:
+            url = f"http://{domain}"
+            resp = requests.get(url, timeout=5, headers={"User-Agent": "Mozilla/5.0"})
+            html = resp.text.lower()
+
+            sale_indicators = [
+                "buy this domain", "domain for sale", "is for sale",
+                "this domain may be for sale", "sedo", "dan.com",
+                "namecheap marketplace", "godaddy.com","seo.domains"
+            ]
+
+            if any(kw in html for kw in sale_indicators):
+                return False  # Domain is for sale
+
+            return True
+        except requests.RequestException:
+            # If site unreachable, assume it's valid (not for sale)
+            return True
+
+    def _is_russian_domain(self, domain):
+        """
+        Detects if the website content is primarily in Russian.
+        Makes a GET request and searches for Cyrillic characters.
+        Returns:
+            bool: True if NOT Russian, False if site contains Russian text.
+        """
+        try:
+            url = f"https://{domain}"
+            resp = requests.get(url, timeout=5, headers={"User-Agent": "Mozilla/5.0"})
+            html = resp.text
+
+            # Detect presence of Cyrillic characters (common Russian letters)
+            if re.search(r"[а-яА-ЯЁё]", html):
+                return False  # Contains Russian text
+
+            return True
+        except requests.RequestException:
+            # If unreachable or timeout, assume not Russian
+            return True
 
 
 if __name__ == '__main__':
