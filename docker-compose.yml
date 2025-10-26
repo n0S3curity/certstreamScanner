@@ -11,8 +11,8 @@ services:
     # so data survives container restarts/updates.
     volumes:
       - mongodb_data:/data/db
-    ports:
-      - "27017:27017" # Expose only if needed for external tools
+#    ports:
+#      - "27017:27017" # Expose only if needed for external tools
     restart: always # Always restart if it stops
 
   # -----------------------------------------------------------------
