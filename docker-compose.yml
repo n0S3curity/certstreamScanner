@@ -42,7 +42,7 @@ services:
   # -----------------------------------------------------------------
   frontend:
     build:
-      context: ./frontend/domain_scanner
+      context: ./frontend/domain-scanner
       dockerfile: Dockerfile
     container_name: certstream_frontend
     depends_on:
