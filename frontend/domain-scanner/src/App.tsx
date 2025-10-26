@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 
 // --- Type Definitions for TypeScript ---
-// [Type definitions remain the same]
 
-// Interface for the raw data coming from the API (as described in your example)
 interface RawDomainData {
     cert_id: string;
     domain: string;
@@ -14,29 +12,33 @@ interface RawDomainData {
     time_issued: string;
 }
 
-// Interface for the complete API response structure
 interface ApiResponse {
     count: number;
     data: RawDomainData[];
     success: boolean;
 }
 
-// Internal Domain structure with added tags for the UI
 interface Domain {
-    id: string; // cert_id
-    name: string; // domain
-    subdomains: string[]; // Contains simplified subdomains for consistency
-    fullSubdomains: string[]; // NEW: Contains full FQDN subdomains for display
-    tags: string[]; // Dynamically generated tags
-    timestamp: string; // last_seen
+    id: string;
+    name: string;
+    subdomains: string[];
+    fullSubdomains: string[];
+    tags: string[];
+    timestamp: string;
 }
 
-// Fixed type definition: Use standard CSSProperties as pseudo-classes break type checking
 type StyleMap = {
     [key: string]: React.CSSProperties;
 };
 
-// [Static Filters and Tagging Logic remain the same]
+// --- Static Filters ---
+const PREPARED_SUBDOMAIN_FILTERS = [
+    { label: 'All Subs', value: 'all' },
+    { label: '0 Subs', value: '0' },
+    { label: '1-3 Subs', value: '1-3' },
+    { label: '4+ Subs', value: '4+' },
+];
+
 
 // --- Tagging Logic Function ---
 function generateTags(domainName: string, subdomains: string[]): string[] {
@@ -77,7 +79,7 @@ function generateTags(domainName: string, subdomains: string[]): string[] {
 
 
 function App() {
-    // [State and Dynamic Filters remain the same]
+    // --- State ---
     const [allDomains, setAllDomains] = useState<Domain[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
@@ -86,7 +88,9 @@ function App() {
     const [activeSubdomainFilter, setActiveSubdomainFilter] = useState<string>('all');
     const [activeTagFilter, setActiveTagFilter] = useState<string>('All Tags');
 
-    // ... (availableTags and availableSuffixes useMemo blocks)
+    // --- Dynamic Filters ---
+
+    // 1. Dynamic Tags
     const availableTags: string[] = useMemo(() => {
         const tags = new Set<string>(['All Tags']);
         allDomains.forEach(domain => domain.tags.forEach(tag => tags.add(tag)));
@@ -97,14 +101,13 @@ function App() {
         });
     }, [allDomains]);
 
+    // 2. Dynamic Suffixes
     const availableSuffixes: string[] = useMemo(() => {
         const suffixes = new Set<string>(['All']);
         allDomains.forEach(domain => {
             const parts = domain.name.split('.');
             if (parts.length >= 2) {
-                // Get TLD (.com, .org, .il)
                 suffixes.add('.' + parts[parts.length - 1]);
-                // Get SLD (.co.il, .ac.il)
                 if (parts.length >= 3) {
                      suffixes.add('.' + parts[parts.length - 2] + '.' + parts[parts.length - 1]);
                 }
@@ -118,13 +121,12 @@ function App() {
     }, [allDomains]);
 
 
-    // [Data Fetching useEffect remains the same]
+    // --- Data Fetching ---
     useEffect(() => {
         const fetchDomains = async () => {
             setLoading(true);
             setError(null);
 
-            // --- API URL ---
             const apiUrl = 'http://localhost:5000/api/domains';
 
             try {
@@ -163,7 +165,7 @@ function App() {
         fetchDomains();
     }, []);
 
-    // [Filtering Logic useMemo remains the same]
+    // --- Filtering Logic ---
     const filteredDomains = useMemo(() => {
         let currentDomains = allDomains;
 
@@ -198,7 +200,6 @@ function App() {
     }, [allDomains, searchTerm, activeSuffixFilter, activeSubdomainFilter, activeTagFilter]);
 
 
-    // [getTagColorStyle function remains the same]
     const getTagColorStyle = (tag: string): React.CSSProperties => {
         if (tag === 'admin' || tag === 'internal' || tag === 'security') return { backgroundColor: '#f56565', color: '#1a202c' };
         if (tag === 'dev' || tag === 'staging' || tag === 'test' || tag === 'beta') return { backgroundColor: '#f6e05e', color: '#1a202c' };
@@ -209,7 +210,6 @@ function App() {
 
     // --- Render Content ---
     const renderContent = () => {
-        // [Rendering logic remains the same]
         if (loading) {
             return <div style={styles.message}>Loading domains from API...</div>;
         }
@@ -224,18 +224,15 @@ function App() {
                 ) : (
                     filteredDomains.map(domain => (
                         <div key={domain.id} style={styles.domainCard}>
-                            {/* Main Domain Name (Clickable) - ADDED ON MOUSE ENTER/LEAVE FOR HOVER EFFECT */}
                             <a
                                 href={`https://${domain.name}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 style={styles.domainNameLink}
                             >
-                                {/* Removed inline hover pseudo-class from styles.domainName */}
                                 <h3 style={styles.domainName}>{domain.name}</h3>
                             </a>
 
-                            {/* Tag Badges... */}
                             {domain.tags.length > 0 && (
                                 <div style={styles.tagList}>
                                     {domain.tags.map(tag => (
@@ -253,7 +250,6 @@ function App() {
                                 Subdomains ({domain.fullSubdomains.length}):
                             </p>
 
-                            {/* Subdomain List... */}
                             {domain.fullSubdomains.length > 0 ? (
                                 <div style={styles.subdomainList}>
                                     {domain.fullSubdomains.map(fullSub => (
@@ -264,7 +260,6 @@ function App() {
                                             rel="noopener noreferrer"
                                             style={styles.subdomainTagLink}
                                         >
-                                            {/* Removed inline hover pseudo-class from styles.subdomainTag */}
                                             <span style={styles.subdomainTag}>
                                                 {fullSub}
                                             </span>
@@ -283,7 +278,6 @@ function App() {
         );
     };
 
-    // [Return statement remains the same]
     return (
         <div style={styles.container}>
             <header style={styles.header}>
@@ -325,13 +319,7 @@ function App() {
                 <div style={styles.filterSection}>
                     <h2 style={styles.filterSectionTitle}>Subdomain Count</h2>
                     <div style={styles.filterButtonGroup}>
-                        {/* PREPARED_SUBDOMAIN_FILTERS (defined outside App) */}
-                        {[
-                            { label: 'All Subs', value: 'all' },
-                            { label: '0 Subs', value: '0' },
-                            { label: '1-3 Subs', value: '1-3' },
-                            { label: '4+ Subs', value: '4+' },
-                        ].map(filter => (
+                        {PREPARED_SUBDOMAIN_FILTERS.map(filter => (
                             <button
                                 key={filter.value}
                                 style={
@@ -385,7 +373,7 @@ function App() {
     );
 }
 
-// --- Styles (Fixed to remove illegal inline CSS properties) ---
+// --- Styles (Final Verified Structure) ---
 const styles: StyleMap = {
     // Global & Layout
     container: {
@@ -527,7 +515,6 @@ const styles: StyleMap = {
         textDecoration: 'none',
         color: 'inherit',
     },
-    // FIX TS2353 error on line 548 by removing ':hover'
     domainName: {
         fontSize: '1.4em',
         color: '#90cdf4',
@@ -535,7 +522,6 @@ const styles: StyleMap = {
         wordBreak: 'break-word',
         cursor: 'pointer',
         transition: 'color 0.2s',
-        // ':hover': { color: '#63b3ed', }, // REMOVED: Invalid inline style property
     },
     tagList: {
         display: 'flex',
@@ -572,7 +558,6 @@ const styles: StyleMap = {
         textDecoration: 'none',
         color: 'inherit',
     },
-    // FIX TS2353 error on line 596 by removing ':hover'
     subdomainTag: {
         backgroundColor: '#4a5568',
         color: '#e2e8f0',
@@ -582,7 +567,6 @@ const styles: StyleMap = {
         cursor: 'pointer',
         wordBreak: 'break-all',
         transition: 'background-color 0.2s',
-        // ':hover': { backgroundColor: '#63b3ed', color: '#1a202c', }, // REMOVED: Invalid inline style property
     },
     noSubMessage: {
         color: '#718096',
@@ -606,18 +590,6 @@ const styles: StyleMap = {
         color: '#a0aec0',
         fontSize: '1.1em',
     },
-
-    // FIX TS1117 and TS2322/626 by removing illegal media query/duplicate keys
-    // We can't use @media for inline styles. We'll simulate responsiveness with flex/grid.
-    // The previous implementation used an object with non-standard keys.
-    // We will leave the styles as they are and rely on the grid system for responsiveness.
-    // Note: The previous use of '@media (max-width: 768px)' was causing the error.
-
-    // We will rely on CSS files or other methods for full responsiveness, but for a single file
-    // using inline styles, we must remove the media query sections entirely.
-
-    // The previous responsive block that caused errors (TS1117 and TS2322) is removed:
-    // '@media (max-width: 768px)': { ... }
 };
 
 export default App;
