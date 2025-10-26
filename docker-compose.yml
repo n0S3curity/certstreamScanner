@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  # -----------------------------------------------------------------
+  # 1. MongoDB Database Service
+  # -----------------------------------------------------------------
+  mongo:
+    image: mongo:latest
+    container_name: certstream_mongo_db
+    # This is critical for persistence: mounts a named volume
+    # so data survives container restarts/updates.
+    volumes:
+      - mongodb_data:/data/db
+    ports:
+      - "27017:27017" # Expose only if needed for external tools
+    restart: always # Always restart if it stops
+
+  # -----------------------------------------------------------------
+  # 2. Python Backend Service (API)
+  # -----------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: certstream_backend
+    # Link to the MongoDB service
+    depends_on:
+      - mongo
+    environment:
+      # These environment variables help the Python app connect to the DB
+      MONGO_URI: mongodb://mongo:27017/certstreamdb
+      PYTHON_PORT: 5000
+    # Expose the internal port 5000, but do not map it to the host
+    # as the frontend will access it directly via the Docker network.
+    expose:
+      - "5000"
+    restart: always
+    working_dir: /app/backend
+
+  # -----------------------------------------------------------------
+  # 3. React Frontend Service (Web UI)
+  # -----------------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend/domain_scanner
+      dockerfile: Dockerfile
+    container_name: certstream_frontend
+    depends_on:
+      - backend
+    # Map port 80 in the container to port 80 on the host machine
+    ports:
+      - "80:80"
+    restart: always
+
+# -----------------------------------------------------------------
+# Define Persistent Volume
+# -----------------------------------------------------------------
+volumes:
+  # This named volume will be managed by Docker and persist MongoDB data
+  mongodb_data:
+    driver: local

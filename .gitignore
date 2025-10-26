@@ -1,3 +1,4 @@
 ./frontend/node_modules
 .idea
 __pycache__
+frontend/domain-scanner/node_modules
