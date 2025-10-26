@@ -49,7 +49,7 @@ services:
       - backend
     # Map port 80 in the container to port 80 on the host machine
     ports:
-      - "80:80"
+      - "8534:80"
     restart: always
 
 # -----------------------------------------------------------------

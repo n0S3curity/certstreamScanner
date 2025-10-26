@@ -577,10 +577,10 @@ const styles: StyleMap = {
     timestamp: {
         fontSize: '0.7em',
         color: '#718096',
-        marginTop: 'auto',
+        marginTop: 'auto', // Keep this for flex alignment
         paddingTop: '10px',
         borderTop: '1px solid #4a5568',
-        marginTop: '15px',
+        // Removed the duplicate 'marginTop: '15px',' here to fix TS1117
     },
 
     // Messages
